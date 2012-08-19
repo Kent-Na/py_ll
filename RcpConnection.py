@@ -177,6 +177,12 @@ class RcpConnection:
 		command["password"]=password
 		self.sendCommand(command)
 
+	def addType(self,name):
+		command = {}
+		command["command"]="addType"
+		command["name"]=name
+		self.sendCommand(command)
+	
 	def appendValue(self,value):
 		command = {}
 		command["command"]="appendValue"
@@ -190,22 +196,18 @@ class RcpConnection:
 		command["value"]=value
 		self.sendCommand(command)
 
-	def loginDocument(self,name):
+	def addContext(self,name):
 		command = {}
-		command["command"]="loginDocument"
+		command["command"]="addContext"
 		command["name"]=name
 		self.sendCommand(command)
 
-	def loginDocumentListDocument(self):
+	def loginContext(self,name):
 		command = {}
-		command["command"]="loginDocumentListDocument"
+		command["command"]="loginContext"
+		command["name"]=name
 		self.sendCommand(command)
-	
-	def updateName(self,name):
-		command = {}
-		command["command"] = "updateName"
-		command["name"] = name
-		self.sendCommand(command)
+
 
 #events (these are never called except "didUpdateContents" because did not implemented...)
 	def didConnectToServer(send):
