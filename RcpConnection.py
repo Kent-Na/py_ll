@@ -2,6 +2,10 @@ import socket
 import random
 import json
 
+import rlcompleter
+import readline
+
+readline.parse_and_bind('tab: complete')
 
 class RcpDocumentInfo:
 	def __init__(self):
@@ -30,8 +34,15 @@ class RcpConnection:
 		port = 4000
 		self.mainSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.mainSocket.connect((host,port))
+
+		cmd = {
+			'command':'open',
+			'protocol':'alpha1',
+			'client':"PyLL"
+		}
+		self.sendCommand(cmd)
 	
-	def close():
+	def close(self):
 		self.mainSocket.close()
 
 
@@ -60,54 +71,6 @@ class RcpConnection:
 			dinfo.lastUpdateTime = command["lastUpdateTime"]
 			self.documentIDTable[command["documentID"]] = dinfo
 			self.didUpdateContents()
-		if command["command"] == "user":
-			self.userIDTable[command["userID"]] = command["name"]	
-			self.didUpdateContents()
-		if command["command"] == "updateDocumentList":
-			self.documentList = command["documentIDs"]
-			for ID in self.documentList:
-				if not ID in self.documentIDTable:
-					sendCommand = {}
-					sendCommand["command"] = "document"
-					sendCommand["documentID"] = ID
-					self.sendCommand(sendCommand)
-			self.didUpdateContents()
-		if command["command"] == "updateUserList":
-			self.userList = command["userIDs"]
-			for ID in self.userList:
-				if not ID in self.userIDTable:
-					sendCommand = {}
-					sendCommand["command"] = "user"
-					sendCommand["userID"] = ID
-					self.sendCommand(sendCommand)
-			self.didUpdateContents()
-		if command["command"] == "addObject":
-			type = command["type"]
-			objectID = command["objectID"]
-			if not type in self.typeTable:
-				print ("fatal error")
-				return
-				exit()
-			newObject = self.typeTable[type](objectID)
-			newObject.executeCommand(command)
-			self.objects[objectID] = newObject
-#will be deprecated
-			self.objectsArray.append(newObject)
-			self.didUpdateContents()
-		if command["command"]=="updateObject":
-			objectID = command["objectID"]
-			if not objectID in self.objects:
-				print ("fatal error")
-				return
-				exit()
-			object = self.objects[objectID]
-			object.executeCommand(command)
-			self.didUpdateContents()
-		if command["command"]=="removeObject":
-#will be deprecated
-			self.objectsArray.append(self.objects[objectID])
-			del self.objects[objectID]
-			self.didUpdateContents()
 			
 
 #input: command dictionaly
@@ -119,20 +82,27 @@ class RcpConnection:
 		self.mainSocket.send(bytes(commandString,'utf8'))
 
 	def receiveCommand(self):
-		new = self.mainSocket.recv(1024)
-		new = str(new, 'utf8')
-		if new == "":
-			if self.outputDebug:
-				print("connection closed")
-			self.didLostConnection()
-		rawdat = self.remain + new
-		strings = rawdat.split("\0");
-		for element in strings[:-1]:
-			if self.outputDebug:
-				print("<-"+element)
-			command = json.loads(element)
-			self.executeCommand(command)
-		self.remain = strings[-1]
+		new = self.mainSocket.recv(1024*16)
+		try:
+			new = str(new, 'utf8')
+			if new == "":
+				if self.outputDebug:
+					print("connection closed")
+				self.didLostConnection()
+			rawdat = self.remain + new
+			strings = rawdat.split("\0");
+			for element in strings[:-1]:
+				if self.outputDebug:
+					try:
+						print("<-"+element)
+					except:
+						pass
+				command = json.loads(element)
+				self.executeCommand(command)
+			self.remain = strings[-1]
+		except:
+			pass
+		
 
 #input: command dictionaly
 	def executeAndSendCommand(self,command):
@@ -177,6 +147,19 @@ class RcpConnection:
 		command["password"]=password
 		self.sendCommand(command)
 
+	def setPermission(self,username,mode):
+		command = {}
+		command["command"]="setPermission"
+		command["username"]=username
+		command["mode"]=mode
+		self.sendCommand(command)
+
+	def unsetPermission(self,username):
+		command = {}
+		command["command"]="unsetPermission"
+		command["username"]=username
+		self.sendCommand(command)
+
 	def addType(self,name):
 		command = {}
 		command["command"]="addType"
@@ -208,6 +191,10 @@ class RcpConnection:
 		command["name"]=name
 		self.sendCommand(command)
 
+	def logoutContext(self):
+		command = {}
+		command["command"]="logoutContext"
+		self.sendCommand(command)
 
 #events (these are never called except "didUpdateContents" because did not implemented...)
 	def didConnectToServer(send):
