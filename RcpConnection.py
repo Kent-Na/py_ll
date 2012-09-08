@@ -26,11 +26,21 @@ class RcpConnection:
 		self.objectsArray = []
 		self.outputDebug = True 
 		
-	def connectToDefaultServer(self):
-#host = "www.tuna-cat.com"
-#port = 2189
-#host = '10.0.1.17'
+	def connectToLocal(self):
 		host = 'localhost'
+		port = 4000
+		self.mainSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.mainSocket.connect((host,port))
+
+		cmd = {
+			'command':'open',
+			'protocol':'alpha1',
+			'client':"PyLL"
+		}
+		self.sendCommand(cmd)
+
+	def connectToTunaCat(self):
+		host = "www.tuna-cat.com"
 		port = 4000
 		self.mainSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.mainSocket.connect((host,port))
