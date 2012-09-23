@@ -21,7 +21,7 @@ class RcpConnection:
 		self.documentIDTable = {}
 		self.userList = []
 		self.userIDTable = {}
-		self.remain = ""
+		self.remain = b""
 #will be deprecated
 		self.objectsArray = []
 		self.outputDebug = True 
@@ -92,48 +92,25 @@ class RcpConnection:
 		self.mainSocket.send(bytes(commandString,'utf8'))
 
 	def receiveCommand(self):
-		new = self.mainSocket.recv(1024*16)
-		try:
-			new = str(new, 'utf8')
-			if new == "":
+		new = self.remain + self.mainSocket.recv(1024*16)
+		if new == b"":
+			if self.outputDebug:
+				print("connection closed")
+			self.didLostConnection()
+		new = self.remain + new 
+
+		byte_segments = new.split(bytes(b"\0"));
+		for segment in byte_segments[:-1]:
+			try:
+				segment = str(segment, 'utf8')
 				if self.outputDebug:
-					print("connection closed")
-				self.didLostConnection()
-			rawdat = self.remain + new
-			strings = rawdat.split("\0");
-			for element in strings[:-1]:
-				if self.outputDebug:
-					try:
-						print("<-"+element)
-					except:
-						pass
-				command = json.loads(element)
+					print("<-"+segment)
+				command = json.loads(segment)
 				self.executeCommand(command)
-			self.remain = strings[-1]
-		except:
-			pass
-		
+			except:
+				print("<-X")
+		self.remain = byte_segments[-1]
 
-#input: command dictionaly
-	def executeAndSendCommand(self,command):
-		self.executeCommand()
-		self.sendCommand()
-
-	def userNameList(self):
-		names = []
-		for ID in self.userList:
-			if ID in self.userIDTable:
-				names.append(self.userIDTable[ID])
-			else:
-				names.append(str(ID))
-		return names
-
-	def objectForID(self,objectID):
-		return objects[objectID]	
-
-#This method will be deplecated.
-	def objectAtIndex(send):
-		return None
 
 #command sending
 	def protocol(self):
