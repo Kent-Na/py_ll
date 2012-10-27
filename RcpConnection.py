@@ -183,6 +183,10 @@ class RcpConnection:
 		command["command"]="logoutContext"
 		self.sendCommand(command)
 
+	def resetContext(self):
+		command = {}
+		command["command"]="resetContext"
+		self.sendCommand(command)
 #events (these are never called except "didUpdateContents" because did not implemented...)
 	def didConnectToServer(send):
 		pass
